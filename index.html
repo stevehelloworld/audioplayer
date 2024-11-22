@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Audio Player</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="main-container">
+        <div class="player-container">
+            <h2>Audio Player</h2>
+            
+            <div class="upload-section">
+                <input type="file" id="fileInput" accept="audio/*">
+                <div class="url-input">
+                    <input type="text" id="urlInput" placeholder="输入音频URL">
+                    <button onclick="loadFromUrl()">加载URL</button>
+                </div>
+            </div>
+
+            <div class="player-controls">
+                <audio id="audioPlayer"></audio>
+                <div class="progress-bar">
+                    <div class="progress"></div>
+                </div>
+                <div class="time-display">
+                    <span id="currentTime">00:00</span> / 
+                    <span id="duration">00:00</span>
+                </div>
+                <div class="controls">
+                    <button onclick="previousTrack()">上一首</button>
+                    <button onclick="playPause()" id="playPauseBtn">播放</button>
+                    <button onclick="nextTrack()">下一首</button>
+                </div>
+            </div>
+
+            <div class="speed-control-container">
+                <input type="range" id="speedSlider" min="30" max="200" value="100" class="speed-slider">
+                <div class="speed-value" id="speedValue">1.0x</div>
+            </div>
+        </div>
+
+        <div class="playlist-container">
+            <h3>播放列表</h3>
+            <div class="playlist" id="playlist">
+                <!-- 播放列表项会在这里动态添加 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const audioPlayer = document.getElementById('audioPlayer');
+        const progress = document.querySelector('.progress');
+        const fileInput = document.getElementById('fileInput');
+        const playlist = [];
+        let currentTrackIndex = 0;
+        
+        fileInput.addEventListener('change', function(e) {
+            const files = e.target.files;
+            for(let file of files) {
+                playlist.push({
+                    name: file.name,
+                    url: URL.createObjectURL(file)
+                });
+            }
+            updatePlaylist();
+            if(playlist.length === files.length) {
+                playTrack(0);
+            }
+        });
+
+        function loadFromUrl() {
+            const url = document.getElementById('urlInput').value;
+            const name = url.split('/').pop() || '未命名音频';
+            if(url) {
+                playlist.push({ name, url });
+                updatePlaylist();
+                if(playlist.length === 1) {
+                    playTrack(0);
+                }
+            }
+        }
+
+        function updatePlaylist() {
+            const playlistEl = document.getElementById('playlist');
+            playlistEl.innerHTML = playlist.map((track, index) => `
+                <div class="playlist-item ${index === currentTrackIndex ? 'active' : ''}" 
+                     onclick="playTrack(${index})">
+                    ${track.name}
+                </div>
+            `).join('');
+        }
+
+        function playTrack(index) {
+            currentTrackIndex = index;
+            audioPlayer.src = playlist[index].url;
+            audioPlayer.play();
+            speedSlider.value = 100;
+            speedValue.textContent = '1.0x';
+            audioPlayer.playbackRate = 1.0;
+            updatePlaylist();
+        }
+
+        audioPlayer.addEventListener('ended', function() {
+            if(currentTrackIndex < playlist.length - 1) {
+                playTrack(currentTrackIndex + 1);
+            }
+        });
+
+        function previousTrack() {
+            if(playlist.length === 0) return;
+            currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+            playTrack(currentTrackIndex);
+        }
+
+        function nextTrack() {
+            if(playlist.length === 0) return;
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+            playTrack(currentTrackIndex);
+        }
+
+        function playPause() {
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            if(audioPlayer.paused) {
+                audioPlayer.play();
+                playPauseBtn.textContent = '暂停';
+            } else {
+                audioPlayer.pause();
+                playPauseBtn.textContent = '播放';
+            }
+        }
+
+        audioPlayer.addEventListener('play', function() {
+            document.getElementById('playPauseBtn').textContent = '暂停';
+        });
+
+        audioPlayer.addEventListener('pause', function() {
+            document.getElementById('playPauseBtn').textContent = '播放';
+        });
+
+        audioPlayer.addEventListener('timeupdate', function() {
+            const percentage = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+            progress.style.width = percentage + '%';
+            
+            document.getElementById('currentTime').textContent = formatTime(audioPlayer.currentTime);
+            document.getElementById('duration').textContent = formatTime(audioPlayer.duration);
+        });
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        function throttle(func, limit) {
+            let inThrottle;
+            return function(...args) {
+                if (!inThrottle) {
+                    func.apply(this, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            }
+        }
+
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+
+        const handleSpeedChange = throttle(function(e) {
+            const speed = parseFloat(e.target.value) / 100;
+            audioPlayer.playbackRate = speed;
+            speedValue.textContent = speed.toFixed(1) + 'x';
+        }, 100); // 100ms 的节流时间
+
+        speedSlider.addEventListener('input', handleSpeedChange);
+    </script>
+</body>
+</html> 
