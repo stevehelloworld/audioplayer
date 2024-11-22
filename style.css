@@ -246,4 +246,73 @@ button:active {
     .playlist-container {
         width: auto;
     }
+}
+
+/* 平板设备 (iPad) */
+@media (max-width: 1024px) {
+    .main-container {
+        max-width: 90%;
+        gap: 15px;
+    }
+
+    .player-container {
+        min-width: 250px;
+    }
+
+    .playlist-container {
+        width: 250px;
+    }
+
+    button {
+        padding: 6px 15px;
+        min-width: 70px;
+        font-size: 0.9em;
+    }
+}
+
+/* 手机设备 */
+@media (max-width: 768px) {
+    .main-container {
+        flex-direction: column;
+        padding: 10px;
+    }
+    
+    .playlist-container {
+        width: auto;
+    }
+
+    .controls {
+        gap: 10px;
+    }
+
+    button {
+        padding: 8px 12px;
+        min-width: 60px;
+        font-size: 0.85em;
+    }
+
+    .upload-section {
+        flex-direction: column;
+    }
+
+    .url-input {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    h2 {
+        font-size: 1.5em;
+    }
+}
+
+/* 小型手机设备 */
+@media (max-width: 480px) {
+    .main-container {
+        padding: 5px;
+    }
+
+    .player-container,
+    .playlist-container {
+        padding: 15px;
+    }
 } 

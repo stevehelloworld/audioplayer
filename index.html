@@ -11,7 +11,7 @@
             <h2>Audio Player</h2>
             
             <div class="upload-section">
-                <input type="file" id="fileInput" accept="audio/*">
+                <input type="file" id="fileInput" accept="audio/*" multiple>
                 <div class="url-input">
                     <input type="text" id="urlInput" placeholder="输入音频URL">
                     <button onclick="loadFromUrl()">加载URL</button>
@@ -23,6 +23,7 @@
                 <div class="progress-bar">
                     <div class="progress"></div>
                 </div>
+                
                 <div class="time-display">
                     <span id="currentTime">00:00</span> / 
                     <span id="duration">00:00</span>
@@ -83,22 +84,46 @@
 
         function updatePlaylist() {
             const playlistEl = document.getElementById('playlist');
-            playlistEl.innerHTML = playlist.map((track, index) => `
-                <div class="playlist-item ${index === currentTrackIndex ? 'active' : ''}" 
-                     onclick="playTrack(${index})">
-                    ${track.name}
-                </div>
-            `).join('');
+            const sortedPlaylist = [...playlist].sort((a, b) => a.name.localeCompare(b.name));
+            
+            playlistEl.innerHTML = sortedPlaylist.map((track, index) => {
+                const originalIndex = playlist.findIndex(t => t.name === track.name);
+                return `
+                    <div class="playlist-item ${originalIndex === currentTrackIndex ? 'active' : ''}" 
+                         onclick="playTrack(${originalIndex})">
+                        ${track.name}
+                    </div>
+                `;
+            }).join('');
         }
 
         function playTrack(index) {
+            if (playlist.length === 0) return;
+            
             currentTrackIndex = index;
-            audioPlayer.src = playlist[index].url;
-            audioPlayer.play();
-            speedSlider.value = 100;
-            speedValue.textContent = '1.0x';
-            audioPlayer.playbackRate = 1.0;
-            updatePlaylist();
+            const track = playlist[index];
+            
+            try {
+                audioPlayer.src = track.url;
+                audioPlayer.play().catch(error => {
+                    console.warn(`播放失败: ${track.name}`, error);
+                    // 尝试播放下一首
+                    if (playlist.length > 1) {
+                        nextTrack();
+                    }
+                });
+                
+                speedSlider.value = 100;
+                speedValue.textContent = '1.0x';
+                audioPlayer.playbackRate = 1.0;
+                updatePlaylist();
+            } catch (error) {
+                console.error('加载音频失败:', error);
+                // 尝试播放下一首
+                if (playlist.length > 1) {
+                    nextTrack();
+                }
+            }
         }
 
         audioPlayer.addEventListener('ended', function() {
